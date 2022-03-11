@@ -263,7 +263,6 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                             endl = CLI_CARRIAGE_RETURN_VALUE;
                             cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
 #endif // CLI_INCLUDE_CARRIAGE_RETURN
-                            cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
                         }
 #if CLI_TAB_COMPLETE_ENABLE
                         else if (cli->tab && !cli->cdone)
@@ -285,6 +284,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
             {
                 commandClr(*cli, cli->config.buf);
                 cli->cdone = FLAG_NOT_READY;
+                cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
             }
         }
 
