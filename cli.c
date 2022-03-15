@@ -1,5 +1,4 @@
 #include "cli.h"
-#include <stddef.h>
 
 #ifndef NULL
 #define NULL ((void *) 0U)
@@ -10,11 +9,11 @@
 
 #define SPECIAL_VALUE_LENGTH (1U)
 
-static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, size_t n);
-static size_t commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command);
-static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, size_t *offset);
+static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, CLI_SIZE_T n);
+static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command);
+static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset);
 static CLIRet_t commandClr(CLIInst_t cli, CLI_BUF_VALUE_T *command);
-static inline void *commandCopy(unsigned char *dest, unsigned char *src, size_t n);
+static inline void *commandCopy(unsigned char *dest, unsigned char *src, CLI_SIZE_T n);
 static inline CLIRet_t flagHandler(CLIInst_t *cli);
 
 CLIRet_t CLIInit(CLIInst_t *cli, CLIConfig_t cnf)
@@ -134,7 +133,7 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
 }
 
 
-static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, size_t n)
+static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, CLI_SIZE_T n)
 {
     CLIRet_t ret = CLI_OK;
 
@@ -157,9 +156,9 @@ static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, size_t n)
     return ret;
 }
 
-static size_t commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command)
+static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command)
 {
-    size_t n = 0U;
+    CLI_SIZE_T n = 0U;
 
     while (command[n] != CLI_ARG_TERMINATION_VALUE 
         && command[n] != CLI_ARG_DELIMETER_VALUE 
@@ -171,10 +170,10 @@ static size_t commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command)
     return n;
 }
 
-static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, size_t *offset)
+static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset)
 {
     CLIRet_t ret = CLI_OK;
-    size_t begin = *offset;
+    CLI_SIZE_T begin = *offset;
 
     *arg = &command[begin];
     
@@ -209,7 +208,7 @@ static inline CLIRet_t commandClr(CLIInst_t cli, CLI_BUF_VALUE_T *command)
     return ret;
 }
 
-static inline void *commandCopy(unsigned char *dest, unsigned char *src, size_t n)
+static inline void *commandCopy(unsigned char *dest, unsigned char *src, CLI_SIZE_T n)
 {
     while (n-- > 0U)
     {
@@ -233,7 +232,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
         }
         else
         {
-            size_t n = commandLen(cli, cli->config.buf);
+            CLI_SIZE_T n = commandLen(cli, cli->config.buf);
 
             if (n != 0)
             {
@@ -252,7 +251,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                             if (commandCmp((unsigned char *) &cli->config.buf[n], &argt, SPECIAL_VALUE_LENGTH) == CLI_COMMAND_NOT_MATCH)
                             {
 
-                                size_t offset = n + 1U;
+                                CLI_SIZE_T offset = n + 1U;
 
                                 while (argParse(cli, &args[argc++], cli->config.buf, &offset) != CLI_END_ARGS);
                             }

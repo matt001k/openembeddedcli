@@ -2,6 +2,7 @@
 #define __CLI_CONFIG_T
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 ///////////////////////////////////////////
@@ -14,6 +15,7 @@
 #define CLI_BUF_VALUE_T             uint8_t
 #define CLI_BUF_COUNT_VALUE_T       uint8_t
 #define CLI_FLAGS_VALUE_T           uint8_t
+#define CLI_SIZE_T                   size_t
 
 ///////////////////////////////////////////
 //           CLI depedendant             //
