@@ -239,9 +239,10 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
             {
                 for (CLI_COMMAND_COUNT_VALUE_T commandIdx = 0U; commandIdx < cli->config.commandc; commandIdx++)
                 {
-                    if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
+                    if (cli->ready)
                     {
-                        if (cli->ready)
+                        n = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
+                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
                         {
                             CLI_BUF_VALUE_T *args[] = {0U};
                             CLI_ARG_COUNT_VALUE_T argc = 0U;
@@ -263,9 +264,13 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                             endl = CLI_CARRIAGE_RETURN_VALUE;
                             cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
 #endif // CLI_INCLUDE_CARRIAGE_RETURN
+                            break;
                         }
+                    }
 #if CLI_TAB_COMPLETE_ENABLE
-                        else if (cli->tab && !cli->cdone)
+                    else if (cli->tab && !cli->cdone)
+                    {
+                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
                         {
                             n = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[commandIdx].command);
                             commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[commandIdx].command, n);
@@ -273,10 +278,10 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                             cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
                             cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
                             cli->config.tx(cli->config.buf, n);
+                            break;
                         }
-#endif // CLI_TAB_COMPLETE_ENABLE
-                        break;
                     }
+#endif // CLI_TAB_COMPLETE_ENABLE
                 }
             }
 
