@@ -51,10 +51,17 @@ typedef struct
     
 } CLIInst_t;
 
+typedef struct
+{
+    void *bufp;
+    CLI_ARG_COUNT_VALUE_T counter;
+} CLIArg_t;
+
 
 CLIRet_t CLIInit(CLIInst_t *cli, CLIConfig_t cnf);
 CLIRet_t CLIDeinit(CLIInst_t *cli);
 CLIRet_t CLIHandle(CLIInst_t *cli);
 CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value);
+void *CLIArgParse(CLIInst_t *cli, CLIArg_t *arg, void *args, CLI_ARG_COUNT_VALUE_T argc);
 
 #endif // __OE_CLI_H

@@ -132,6 +132,33 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
     return ret;
 }
 
+void *CLIArgParse(CLIInst_t *cli, CLIArg_t *arg, void *args, CLI_BUF_COUNT_VALUE_T argc)
+{
+    CLI_BUF_VALUE_T *buf = NULL;
+
+    if (arg && cli)
+    {
+        if (!arg->bufp && argc > 0)
+        {
+            buf = arg->bufp = args;
+            arg->counter = argc;
+            arg->counter--;
+        }
+        else if (arg->counter > 0)
+        {
+            buf = arg->bufp;
+            arg->counter--;
+        }
+
+        if (arg->counter > 0)
+        {
+            arg->bufp += commandLen(cli, arg->bufp) + 1U;
+        }
+
+    }
+
+    return buf;
+}
 
 static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, CLI_SIZE_T n)
 {
