@@ -160,8 +160,8 @@ static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command)
 {
     CLI_SIZE_T n = 0U;
 
-    while (command[n] != CLI_ARG_TERMINATION_VALUE 
-        && command[n] != CLI_ARG_DELIMETER_VALUE 
+    while (command[n] != CLI_ARG_TERMINATION_VALUE
+        && command[n] != CLI_ARG_DELIMETER_VALUE
         && n < cli->config.bufc)
     {
         n++;
@@ -176,7 +176,7 @@ static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_V
     CLI_SIZE_T begin = *offset;
 
     *arg = &command[begin];
-    
+
     *offset += commandLen(cli, &command[begin]);
 
     if (command[*offset] == CLI_ARG_TERMINATION_VALUE || *offset > cli->config.bufc)
@@ -232,51 +232,55 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
         }
         else
         {
-            CLI_SIZE_T n = commandLen(cli, cli->config.buf);
+            CLI_SIZE_T bufferedCommandLen = commandLen(cli, cli->config.buf);
 
-            if (n != 0)
+            if (bufferedCommandLen != 0)
             {
                 for (CLI_COMMAND_COUNT_VALUE_T commandIdx = 0U; commandIdx < cli->config.commandc; commandIdx++)
                 {
                     if (cli->ready)
                     {
-                        n = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
-                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
+                        CLI_SIZE_T configuredCommandLen = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
+
+                        if (bufferedCommandLen == configuredCommandLen)
                         {
-                            CLI_BUF_VALUE_T *args[] = {0U};
-                            CLI_ARG_COUNT_VALUE_T argc = 0U;
-                            unsigned char argt = (unsigned char) CLI_ARG_TERMINATION_VALUE;
-                            CLI_BUF_VALUE_T endl = CLI_NEW_LINE_VALUE;
-
-                            if (commandCmp((unsigned char *) &cli->config.buf[n], &argt, SPECIAL_VALUE_LENGTH) == CLI_COMMAND_NOT_MATCH)
+                            if (commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, configuredCommandLen) == CLI_OK)
                             {
+                                CLI_BUF_VALUE_T *args[] = {0U};
+                                CLI_ARG_COUNT_VALUE_T argc = 0U;
+                                unsigned char argt = (unsigned char) CLI_ARG_TERMINATION_VALUE;
+                                CLI_BUF_VALUE_T endl = CLI_NEW_LINE_VALUE;
 
-                                CLI_SIZE_T offset = n + 1U;
+                                if (commandCmp((unsigned char *) &cli->config.buf[configuredCommandLen], &argt, SPECIAL_VALUE_LENGTH) == CLI_COMMAND_NOT_MATCH)
+                                {
 
-                                while (argParse(cli, &args[argc++], cli->config.buf, &offset) != CLI_END_ARGS);
-                            }
+                                    CLI_SIZE_T offset = configuredCommandLen + 1U;
 
-                            ret = cli->config.commands[commandIdx].callback((void *) &args[0U][0U], argc);
+                                    while (argParse(cli, &args[argc++], cli->config.buf, &offset) != CLI_END_ARGS);
+                                }
 
-                            cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
+                                ret = cli->config.commands[commandIdx].callback((void *) &args[0U][0U], argc);
+
+                                cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
 #if CLI_INCLUDE_CARRIAGE_RETURN
-                            endl = CLI_CARRIAGE_RETURN_VALUE;
-                            cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
+                                endl = CLI_CARRIAGE_RETURN_VALUE;
+                                cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
 #endif // CLI_INCLUDE_CARRIAGE_RETURN
-                            break;
+                                break;
+                            }
                         }
                     }
 #if CLI_TAB_COMPLETE_ENABLE
                     else if (cli->tab && !cli->cdone)
                     {
-                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
+                        if (commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, bufferedCommandLen) == CLI_OK)
                         {
-                            n = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[commandIdx].command);
-                            commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[commandIdx].command, n);
-                            cli->bufp = cli->config.buf + n;
+                            CLI_SIZE_T configuredCommandLen = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[commandIdx].command);
+                            commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[commandIdx].command, configuredCommandLen);
+                            cli->bufp = cli->config.buf + configuredCommandLen;
                             cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
                             cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
-                            cli->config.tx(cli->config.buf, n);
+                            cli->config.tx(cli->config.buf, configuredCommandLen);
                             break;
                         }
                     }
