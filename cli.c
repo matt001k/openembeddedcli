@@ -9,7 +9,23 @@
 
 #define SPECIAL_VALUE_LENGTH (1U)
 
-static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, CLI_SIZE_T n);
+typedef struct
+{
+    CLI_COMMAND_COUNT_VALUE_T cIdx;
+    CLI_INT_T ccount;
+    CLI_BUF_COUNT_VALUE_T pcount;
+    union
+    {
+        struct
+        {
+            CLI_FLAGS_VALUE_T  found: 1;
+            CLI_FLAGS_VALUE_T   : 7;
+        };
+        CLI_FLAGS_VALUE_T       flags;
+    };
+} cliTab_t;
+
+static CLI_INT_T commandCmp(unsigned char *c, unsigned char *buf, CLI_SIZE_T nc, CLI_SIZE_T nbuf);
 static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command);
 static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset);
 static CLIRet_t commandClr(CLIInst_t cli, CLI_BUF_VALUE_T *command);
@@ -160,19 +176,29 @@ void *CLIArgParse(CLIInst_t *cli, CLIArg_t *arg, void *args, CLI_BUF_COUNT_VALUE
     return buf;
 }
 
-static CLIRet_t commandCmp(unsigned char *s1, unsigned char *s2, CLI_SIZE_T n)
+static CLI_INT_T commandCmp(unsigned char *c, unsigned char *buf, CLI_SIZE_T nc, CLI_SIZE_T nbuf)
 {
-    CLIRet_t ret = CLI_OK;
+    CLI_INT_T ret = CLI_OK;
 
-    if (s1 && s2 && n != 0U)
+    if (c && buf && nc != 0 && nbuf != 0)
     {
-        while (n-- != 0U)
+        while (nc != 0 && nbuf != 0)
         {
-            if (*s1++ != *s2++)
+            if (*c++ != *buf++)
             {
-                n = 0U;
+                nc = nbuf = 0U;
                 ret = CLI_COMMAND_NOT_MATCH;
             }
+            else
+            {
+                nc--;
+                nbuf--;
+            }
+        }
+
+        if (nc)
+        {
+            ret = nc;
         }
     }
     else
@@ -259,26 +285,36 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
         }
         else
         {
-            CLI_SIZE_T n = commandLen(cli, cli->config.buf);
+            CLI_SIZE_T nbuf = commandLen(cli, cli->config.buf);
+            CLI_SIZE_T nc = 0U;
+#if CLI_TAB_COMPLETE_ENABLE
+            cliTab_t tab =
+            {
+                0U,
+                0U,
+                (CLI_BUF_COUNT_VALUE_T) ~0U,
+                {{FLAG_NOT_READY}}
+            };
+#endif // CLI_TAB_COMPLETE_ENABLE
 
-            if (n != 0)
+            if (nbuf != 0U)
             {
                 for (CLI_COMMAND_COUNT_VALUE_T commandIdx = 0U; commandIdx < cli->config.commandc; commandIdx++)
                 {
+                    nc = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
                     if (cli->ready)
                     {
-                        n = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
-                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
+                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, nc, nbuf) == CLI_OK)
                         {
                             CLI_BUF_VALUE_T *args[] = {0U};
                             CLI_ARG_COUNT_VALUE_T argc = 0U;
                             unsigned char argt = (unsigned char) CLI_ARG_TERMINATION_VALUE;
                             CLI_BUF_VALUE_T endl = CLI_NEW_LINE_VALUE;
 
-                            if (commandCmp((unsigned char *) &cli->config.buf[n], &argt, SPECIAL_VALUE_LENGTH) == CLI_COMMAND_NOT_MATCH)
+                            if (commandCmp((unsigned char *) &cli->config.buf[nbuf], &argt, SPECIAL_VALUE_LENGTH, SPECIAL_VALUE_LENGTH) == CLI_COMMAND_NOT_MATCH)
                             {
 
-                                CLI_SIZE_T offset = n + 1U;
+                                CLI_SIZE_T offset = nbuf + 1U;
 
                                 while (argParse(cli, &args[argc++], cli->config.buf, &offset) != CLI_END_ARGS);
                             }
@@ -296,15 +332,15 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
 #if CLI_TAB_COMPLETE_ENABLE
                     else if (cli->tab && !cli->cdone)
                     {
-                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, n) == CLI_OK)
+                        tab.ccount = commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, nc, nbuf);
+                        if(tab.ccount > CLI_OK)
                         {
-                            n = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[commandIdx].command);
-                            commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[commandIdx].command, n);
-                            cli->bufp = cli->config.buf + n;
-                            cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
-                            cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
-                            cli->config.tx(cli->config.buf, n);
-                            break;
+                            if ((CLI_BUF_COUNT_VALUE_T) tab.ccount < tab.pcount)
+                            {
+                                tab.cIdx = commandIdx;
+                                tab.pcount = tab.ccount;
+                                tab.found = FLAG_READY;
+                            }
                         }
                     }
 #endif // CLI_TAB_COMPLETE_ENABLE
@@ -317,6 +353,17 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                 cli->cdone = FLAG_NOT_READY;
                 cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
             }
+#if CLI_TAB_COMPLETE_ENABLE
+            else if (cli->tab && tab.found)
+            {
+                nbuf = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[tab.cIdx].command);
+                commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[tab.cIdx].command, nbuf);
+                cli->bufp = cli->config.buf + nbuf;
+                cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
+                cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
+                cli->config.tx(cli->config.buf, nbuf);
+            }
+#endif // CLI_TAB_COMPLETE_ENABLE
         }
 
         cli->tab = cli->ready = cli->delete = FLAG_NOT_READY;

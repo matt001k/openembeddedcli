@@ -44,11 +44,10 @@ typedef struct
             volatile CLI_FLAGS_VALUE_T  tab: 1;
             volatile CLI_FLAGS_VALUE_T  cdone: 1; 
             volatile CLI_FLAGS_VALUE_T  delete: 1;
-            CLI_FLAGS_VALUE_T   : 4;
+            CLI_FLAGS_VALUE_T : 4;
         };
         volatile CLI_FLAGS_VALUE_T       flags;
     };
-    
 } CLIInst_t;
 
 typedef struct
