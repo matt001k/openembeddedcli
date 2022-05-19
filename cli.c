@@ -200,6 +200,10 @@ static CLI_INT_T commandCmp(unsigned char *c, unsigned char *buf, CLI_SIZE_T nc,
         {
             ret = nc;
         }
+        else if (!nc && !nbuf && ret == CLI_OK)
+        {
+            ret = CLI_COMMAND_MATCH;
+        }
     }
     else
     {
@@ -304,7 +308,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                     nc = commandLen(cli,(unsigned char *) cli->config.commands[commandIdx].command);
                     if (cli->ready)
                     {
-                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, nc, nbuf) == CLI_OK)
+                        if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, nc, nbuf) == CLI_COMMAND_MATCH)
                         {
                             CLI_BUF_VALUE_T *args[] = {0U};
                             CLI_ARG_COUNT_VALUE_T argc = 0U;

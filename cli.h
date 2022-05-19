@@ -5,6 +5,7 @@
 
 typedef enum
 {
+    CLI_COMMAND_MATCH = -5,
     CLI_COMMAND_NOT_MATCH = -4,
     CLI_INVALID_ARGUMENT = -3,
     CLI_BUF_FULL = -2,
