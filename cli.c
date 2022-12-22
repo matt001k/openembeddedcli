@@ -27,7 +27,7 @@ typedef struct
 
 static CLI_INT_T commandCmp(unsigned char *c, unsigned char *buf, CLI_SIZE_T nc, CLI_SIZE_T nbuf);
 static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command);
-static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset);
+static inline CLIRet_t argParse(CLIInst_t *cli, void **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset);
 static CLIRet_t commandClr(CLIInst_t cli, CLI_BUF_VALUE_T *command);
 static inline void *commandCopy(unsigned char *dest, unsigned char *src, CLI_SIZE_T n);
 static inline CLIRet_t flagHandler(CLIInst_t *cli);
@@ -148,34 +148,6 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
     return ret;
 }
 
-void *CLIArgParse(CLIInst_t *cli, CLIArg_t *arg, void *args, CLI_BUF_COUNT_VALUE_T argc)
-{
-    CLI_BUF_VALUE_T *buf = NULL;
-
-    if (arg && cli)
-    {
-        if (!arg->bufp && argc > 0)
-        {
-            buf = arg->bufp = args;
-            arg->counter = argc;
-            arg->counter--;
-        }
-        else if (arg->counter > 0)
-        {
-            buf = arg->bufp;
-            arg->counter--;
-        }
-
-        if (arg->counter > 0)
-        {
-            arg->bufp += commandLen(cli, arg->bufp) + 1U;
-        }
-
-    }
-
-    return buf;
-}
-
 static CLI_INT_T commandCmp(unsigned char *c, unsigned char *buf, CLI_SIZE_T nc, CLI_SIZE_T nbuf)
 {
     CLI_INT_T ret = CLI_OK;
@@ -227,7 +199,7 @@ static CLI_SIZE_T commandLen(CLIInst_t *cli, CLI_BUF_VALUE_T *command)
     return n;
 }
 
-static inline CLIRet_t argParse(CLIInst_t *cli, CLI_BUF_VALUE_T **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset)
+static inline CLIRet_t argParse(CLIInst_t *cli, void **arg, CLI_BUF_VALUE_T *command, CLI_SIZE_T *offset)
 {
     CLIRet_t ret = CLI_OK;
     CLI_SIZE_T begin = *offset;
@@ -310,7 +282,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                     {
                         if(commandCmp((unsigned char *) cli->config.commands[commandIdx].command, (unsigned char *) cli->config.buf, nc, nbuf) == CLI_COMMAND_MATCH)
                         {
-                            CLI_BUF_VALUE_T *args[] = {0U};
+                            void *args[CLI_MAX_ARG_COUNT] = {0U};
                             CLI_ARG_COUNT_VALUE_T argc = 0U;
                             unsigned char argt = (unsigned char) CLI_ARG_TERMINATION_VALUE;
                             CLI_BUF_VALUE_T endl = CLI_NEW_LINE_VALUE;
@@ -323,7 +295,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                                 while (argParse(cli, &args[argc++], cli->config.buf, &offset) != CLI_END_ARGS);
                             }
 
-                            ret = cli->config.commands[commandIdx].callback((void *) &args[0U][0U], argc);
+                            ret = cli->config.commands[commandIdx].callback(args, argc);
 
                             cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
 #if CLI_INCLUDE_CARRIAGE_RETURN
@@ -351,7 +323,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                 }
             }
 
-            if (cli->ready)
+            if (cli->ready && ret != CLI_SUPPRESS_LINE_BEGIN)
             {
                 commandClr(*cli, cli->config.buf);
                 cli->cdone = FLAG_NOT_READY;

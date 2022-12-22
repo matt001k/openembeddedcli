@@ -47,8 +47,6 @@ int main(void)
         CLIHandle(&l_cli_inst);
         WDTKick();
     }
-    
-
 
     return 0;
 }
@@ -65,39 +63,23 @@ static void cliTxCallback(CLI_BUF_VALUE_T *buf, CLI_TX_BUF_COUNT_VALUE_T bufc)
 
 static CLIRet_t cliCallback(void *args, CLI_ARG_COUNT_VALUE_T argc)
 {
-    void *buf = NULL;
-    CLIArg_t arg = {0U}; 
-
-    do
+    for (uint8_t i = 0U; i < argc; i++)
     {
-        buf = CLIArgParse(&l_cli_inst, &arg, args, argc);
-
-        if (buf)
-        {
-            cliTxCallback((CLI_BUF_VALUE_T *) buf, strlen((char *) buf));
-        }
-    } while (buf != NULL);
+        cliTxCallback(((char **) args)[i], strlen(((char **) args)[i]));
+    }
     
     return CLI_OK;
 }
 
 static CLIRet_t helloworldCallback(void *args, CLI_ARG_COUNT_VALUE_T argc)
 {
-    void *buf = NULL;
-    CLIArg_t arg = {0U}; 
     const char msg[] = "Hello World: ";
 
     cliTxCallback((CLI_BUF_VALUE_T *) msg, strlen(msg));
-
-    do
+    for (uint8_t i = 0U; i < argc; i++)
     {
-        buf = CLIArgParse(&l_cli_inst, &arg, args, argc);
-
-        if (buf)
-        {
-            cliTxCallback((CLI_BUF_VALUE_T *) buf, strlen((char *) buf));
-        }
-    } while (buf != NULL);
+        cliTxCallback(((char **) args)[i], strlen(((char **) args)[i]));
+    }
 
     return CLI_OK;
 }

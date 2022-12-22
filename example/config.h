@@ -14,7 +14,6 @@
 ///////////////////////////////////////////
 #define CLI_ARG_COUNT_VALUE_T       uint8_t
 #define CLI_COMMAND_COUNT_VALUE_T   uint8_t
-#define CLI_TX_BUF_COUNT_VALUE_T    uint8_t
 #define CLI_BUF_VALUE_T             uint8_t
 #define CLI_BUF_COUNT_VALUE_T       uint8_t
 #define CLI_FLAGS_VALUE_T           uint8_t
@@ -22,6 +21,7 @@
 ///////////////////////////////////////////
 //     These values must be unsigned     //
 ///////////////////////////////////////////
+#define CLI_TX_BUF_COUNT_VALUE_T    uint8_t
 #define CLI_SIZE_T                   size_t
 
 ///////////////////////////////////////////
@@ -35,6 +35,7 @@
 #define CLI_TAB_COMPLETE_ENABLE        true
 #define CLI_INCLUDE_CARRIAGE_RETURN    true
 #define CLI_DELETE_IN_INSERT           true
+#define CLI_MAX_ARG_COUNT              8
 
 ///////////////////////////////////////////
 //    These must be single values of     //
