@@ -42,8 +42,8 @@ CLIRet_t CLIInit(CLIInst_t *cli, CLIConfig_t cnf)
         cli->config = cnf;
         cli->bufp = cli->config.buf;
         commandClr(*cli, cli->config.buf);
-        cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
-        cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
+        cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
+        cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
     }
 
     return ret;
@@ -55,6 +55,7 @@ CLIRet_t CLIDeinit(CLIInst_t *cli)
 
     if (cli)
     {
+        cli->config.port = CLIPORT_NONE;
         cli->config.buf = NULL;
         cli->config.bufc = 0;
         cli->config.commands = NULL;
@@ -95,10 +96,10 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
                         cli->ready = FLAG_READY;
                         cli->bufp = cli->config.buf;
                         value = CLI_NEW_LINE_VALUE;
-                        cli->config.tx(&value, SPECIAL_VALUE_LENGTH);
+                        cli->config.tx(cli->config.port, &value, SPECIAL_VALUE_LENGTH);
 #if CLI_INCLUDE_CARRIAGE_RETURN
                         value = CLI_CARRIAGE_RETURN_VALUE;
-                        cli->config.tx(&value, SPECIAL_VALUE_LENGTH);
+                        cli->config.tx(cli->config.port, &value, SPECIAL_VALUE_LENGTH);
 #endif // CLI_INCLUDE_CARRIAGE_RETURN
                     }
                     break;
@@ -111,7 +112,7 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
                     if (cli->bufp > cli->config.buf)
                     {
 #if CLI_DELETE_IN_INSERT
-                        cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_CHAR, sizeof(CLI_DELETE_CHAR));
+                        cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_DELETE_CHAR, sizeof(CLI_DELETE_CHAR));
 #else
                         cli->delete = FLAG_READY;
 #endif //CLI_DELETE_IN_INSERT
@@ -133,7 +134,7 @@ CLIRet_t CLIInsert(CLIInst_t *cli, CLI_BUF_VALUE_T value)
                             cli->bufd = cli->bufp;
                         }
                         *cli->bufp = value;
-                        cli->config.tx((CLI_BUF_VALUE_T *) cli->bufp, 1U);
+                        cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) cli->bufp, 1U);
                         cli->bufp++;
                     }
                     else
@@ -255,7 +256,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
         if (cli->delete)
         {
 #if !CLI_DELETE_IN_INSERT
-            cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_CHAR, sizeof(CLI_DELETE_CHAR));
+            cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_DELETE_CHAR, sizeof(CLI_DELETE_CHAR));
             ret = CLI_OK;
 #endif //CLI_DELETE_IN_INSERT
         }
@@ -297,10 +298,10 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
 
                             ret = cli->config.commands[commandIdx].callback(args, argc);
 
-                            cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
+                            cli->config.tx(cli->config.port, &endl, SPECIAL_VALUE_LENGTH);
 #if CLI_INCLUDE_CARRIAGE_RETURN
                             endl = CLI_CARRIAGE_RETURN_VALUE;
-                            cli->config.tx(&endl, SPECIAL_VALUE_LENGTH);
+                            cli->config.tx(cli->config.port, &endl, SPECIAL_VALUE_LENGTH);
 #endif // CLI_INCLUDE_CARRIAGE_RETURN
                             break;
                         }
@@ -327,7 +328,7 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
             {
                 commandClr(*cli, cli->config.buf);
                 cli->cdone = FLAG_NOT_READY;
-                cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
+                cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
             }
 #if CLI_TAB_COMPLETE_ENABLE
             else if (cli->tab && tab.found)
@@ -335,9 +336,9 @@ static inline CLIRet_t flagHandler(CLIInst_t *cli)
                 nbuf = commandLen(cli, (CLI_BUF_VALUE_T *) cli->config.commands[tab.cIdx].command);
                 commandCopy((unsigned char *) cli->config.buf, (unsigned char *) cli->config.commands[tab.cIdx].command, nbuf);
                 cli->bufp = cli->config.buf + nbuf;
-                cli->config.tx((CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
-                cli->config.tx((CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
-                cli->config.tx(cli->config.buf, nbuf);
+                cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_DELETE_LINE, sizeof(CLI_DELETE_LINE));
+                cli->config.tx(cli->config.port, (CLI_BUF_VALUE_T *) CLI_LINE_BEGINNING, sizeof(CLI_LINE_BEGINNING));
+                cli->config.tx(cli->config.port, cli->config.buf, nbuf);
             }
 #endif // CLI_TAB_COMPLETE_ENABLE
         }
