@@ -21,7 +21,7 @@ typedef enum
 } CLIRet_t;
 
 typedef CLIRet_t (*CLICommandCallback_t)(void **args, CLI_ARG_COUNT_VALUE_T argc);
-typedef void (*CLITXCallback_t)(CLI_BUF_VALUE_T *buf, CLI_TX_BUF_COUNT_VALUE_T bufc);
+typedef void (*CLITXCallback_t)(PORT_ENUM_T port, CLI_BUF_VALUE_T *buf, CLI_TX_BUF_COUNT_VALUE_T bufc);
 
 typedef struct
 {
@@ -36,6 +36,7 @@ typedef struct
     CLITXCallback_t             tx;
     CLI_BUF_VALUE_T             *buf;
     CLI_BUF_COUNT_VALUE_T       bufc;
+    PORT_ENUM_T                 port;
 } CLIConfig_t;
 
 typedef struct
